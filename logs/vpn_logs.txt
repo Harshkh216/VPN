@@ -1,0 +1,62 @@
+2026-05-14 23:17:08 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-14 23:17:17 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-15 14:28:30 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-15 14:28:39 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-15 14:32:34 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-15 14:33:24 [INFO    ] vpn.server: New connection from 127.0.0.1:61356
+2026-05-15 14:33:24 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-15 14:36:16 [ERROR   ] vpn.server: Client error [127.0.0.1]: [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:2580)
+2026-05-15 14:36:16 [INFO    ] vpn.server: User 'admin' disconnected.
+2026-05-15 14:37:37 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-15 14:38:05 [INFO    ] vpn.server: New connection from 127.0.0.1:50751
+2026-05-15 14:38:05 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-15 14:38:15 [ERROR   ] vpn.server: Client error [127.0.0.1]: [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:2580)
+2026-05-15 14:38:15 [INFO    ] vpn.server: User 'admin' disconnected.
+2026-05-15 16:01:53 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-17 15:14:30 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-17 15:14:54 [INFO    ] vpn.server: New connection from 127.0.0.1:26321
+2026-05-17 15:14:54 [ERROR   ] vpn.server: Client error [127.0.0.1]: Invalid credentials. 4 attempts remaining.
+2026-05-17 15:15:21 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-17 15:15:36 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-17 15:15:56 [INFO    ] vpn.server: New connection from 127.0.0.1:22925
+2026-05-17 15:15:56 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-17 15:16:13 [ERROR   ] vpn.server: Client error [127.0.0.1]: [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:2580)
+2026-05-17 15:16:13 [INFO    ] vpn.server: User 'admin' disconnected.
+2026-05-17 15:19:00 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-17 15:19:49 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-17 15:20:10 [INFO    ] vpn.server: New connection from 127.0.0.1:33912
+2026-05-17 15:20:10 [ERROR   ] vpn.server: Client error [127.0.0.1]: Invalid credentials. 4 attempts remaining.
+2026-05-17 15:20:21 [INFO    ] vpn.server: New connection from 127.0.0.1:33915
+2026-05-17 15:20:21 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-17 15:20:26 [INFO    ] vpn.server: File transfer started: admin → abhishek certificate.pdf
+2026-05-17 15:20:26 [ERROR   ] vpn.server: Client error [127.0.0.1]: [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:2580)
+2026-05-17 15:20:26 [INFO    ] vpn.server: User 'admin' disconnected.
+2026-05-17 15:21:08 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-17 15:22:29 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-17 15:23:02 [INFO    ] vpn.server: New connection from 127.0.0.1:17291
+2026-05-17 15:23:02 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-17 15:23:07 [INFO    ] vpn.server: File transfer started: admin → abhishek certificate.pdf
+2026-05-17 15:23:07 [INFO    ] vpn.server: File 'abhishek certificate.pdf' saved (137118 bytes)
+2026-05-17 15:23:07 [ERROR   ] vpn.server: Client error [127.0.0.1]: [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:2580)
+2026-05-17 15:23:07 [INFO    ] vpn.server: User 'admin' disconnected.
+2026-05-17 15:23:35 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-17 15:23:36 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-17 15:23:56 [INFO    ] vpn.server: New connection from 127.0.0.1:20629
+2026-05-17 15:23:56 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-17 15:24:01 [INFO    ] vpn.server: [CHAT] admin: hiii
+2026-05-17 15:24:12 [INFO    ] vpn.server: [CHAT] admin: helloo
+2026-05-17 15:33:23 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-17 15:33:45 [INFO    ] vpn.server: New connection from 127.0.0.1:45268
+2026-05-17 15:33:45 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-17 15:33:50 [INFO    ] vpn.server: File transfer started: admin → abhishek certificate.pdf
+2026-05-17 15:33:50 [INFO    ] vpn.server: File 'abhishek certificate.pdf' saved (137118 bytes)
+2026-05-17 15:46:30 [INFO    ] vpn.server: VPN Server listening on 0.0.0.0:9443
+2026-05-17 15:47:08 [INFO    ] vpn.server: New connection from 127.0.0.1:35152
+2026-05-17 15:47:08 [ERROR   ] vpn.server: Client error [127.0.0.1]: Invalid credentials. 4 attempts remaining.
+2026-05-17 15:47:15 [INFO    ] vpn.server: New connection from 127.0.0.1:35153
+2026-05-17 15:47:15 [INFO    ] vpn.server: User 'admin' authenticated from 127.0.0.1
+2026-05-17 15:47:21 [INFO    ] vpn.server: File transfer started: admin → abhishek certificate.pdf
+2026-05-17 15:47:22 [INFO    ] vpn.server: File 'abhishek certificate.pdf' saved (137118 bytes)
+2026-05-17 15:47:39 [INFO    ] vpn.server: VPN Server stopped.
+2026-05-17 15:47:39 [INFO    ] vpn.server: User 'admin' disconnected.
+2026-05-17 15:47:48 [INFO    ] vpn.server: VPN Server stopped.

@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVPN — Database Viewer</title>
+<style>
+  :root {
+    --bg:      #0d1117;
+    --bg2:     #161b22;
+    --bg3:     #21262d;
+    --border:  #30363d;
+    --text:    #c9d1d9;
+    --muted:   #8b949e;
+    --accent:  #00d4ff;
+    --green:   #7ee787;
+    --warn:    #f97316;
+    --danger:  #ff4444;
+    --purple:  #a78bfa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 14px; }
+
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { font-size: 18px; font-weight: 600; color: var(--accent); }
+  header span { font-size: 12px; color: var(--muted); }
+  #export-time { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+  .layout { display: flex; height: calc(100vh - 57px); }
+
+  nav {
+    width: 200px; flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 12px 0;
+  }
+  nav button {
+    width: 100%; text-align: left;
+    padding: 10px 20px;
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; gap: 10px;
+    transition: background 0.15s, color 0.15s;
+  }
+  nav button:hover { background: var(--bg3); color: var(--text); }
+  nav button.active { background: var(--bg3); color: var(--accent); border-left: 2px solid var(--accent); }
+  nav .badge {
+    margin-left: auto;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1px 7px; font-size: 11px; color: var(--muted);
+  }
+  nav button.active .badge { color: var(--accent); border-color: var(--accent); }
+
+  main { flex: 1; overflow-y: auto; padding: 24px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+  }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+
+  .section-title {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .search-bar {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px;
+    color: var(--text); font-size: 13px;
+    width: 100%; margin-bottom: 14px; outline: none;
+  }
+  .search-bar:focus { border-color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { position: sticky; top: 0; z-index: 1; }
+  th {
+    background: var(--bg3); color: var(--muted);
+    text-align: left; padding: 10px 12px;
+    font-weight: 500; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  th:hover { color: var(--text); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: var(--bg2); }
+  tr:last-child td { border-bottom: none; }
+
+  .table-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+
+  .pill {
+    display: inline-block; border-radius: 20px;
+    padding: 2px 10px; font-size: 11px; font-weight: 500;
+  }
+  .pill-green  { background: #0d2818; color: var(--green); border: 1px solid #1a4a2a; }
+  .pill-red    { background: #2d1515; color: var(--danger); border: 1px solid #5a2020; }
+  .pill-blue   { background: #0d1f3a; color: var(--accent); border: 1px solid #1a3a5a; }
+  .pill-amber  { background: #2d1f08; color: var(--warn); border: 1px solid #5a3a10; }
+  .pill-purple { background: #1e1535; color: var(--purple); border: 1px solid #3a2560; }
+  .pill-muted  { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+
+  .log-line {
+    font-family: 'Consolas', monospace; font-size: 12px;
+    padding: 4px 12px; border-bottom: 1px solid #1a1f26;
+    line-height: 1.5;
+  }
+  .log-line:hover { background: var(--bg3); }
+  .log-INFO    { color: #58a6ff; }
+  .log-WARNING { color: var(--warn); }
+  .log-ERROR   { color: var(--danger); }
+  .log-DEBUG   { color: var(--muted); }
+
+  .file-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .file-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .file-icon { font-size: 32px; }
+  .file-name { font-size: 13px; font-weight: 500; word-break: break-all; }
+  .file-meta { font-size: 11px; color: var(--muted); }
+  .file-sender { font-size: 11px; }
+
+  .empty { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
+
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 10px;
+    padding: 32px; text-align: center; color: var(--muted);
+    margin-bottom: 24px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .upload-area:hover { border-color: var(--accent); color: var(--accent); }
+  .upload-area.drag  { border-color: var(--accent); color: var(--accent); background: #001a2a; }
+
+  #page-dashboard, #page-users, #page-sessions,
+  #page-history, #page-attempts, #page-files, #page-logs { display: none; }
+  #page-dashboard.active, #page-users.active, #page-sessions.active,
+  #page-history.active, #page-attempts.active, #page-files.active,
+  #page-logs.active { display: block; }
+
+  .mono { font-family: 'Consolas', monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ SecureVPN</h1>
+  <span>Database Viewer</span>
+  <div id="export-time">No data loaded — drop vpn_data_export.json below</div>
+</header>
+
+<div class="layout">
+  <nav>
+    <button class="active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <span>&#9632;</span> Dashboard <span class="badge" id="b-dashboard">—</span>
+    </button>
+    <button onclick="showPage('users')" id="nav-users">
+      <span>&#9670;</span> Users <span class="badge" id="b-users">0</span>
+    </button>
+    <button onclick="showPage('sessions')" id="nav-sessions">
+      <span>&#9675;</span> Sessions <span class="badge" id="b-sessions">0</span>
+    </button>
+    <button onclick="showPage('history')" id="nav-history">
+      <span>&#9671;</span> Connections <span class="badge" id="b-history">0</span>
+    </button>
+    <button onclick="showPage('attempts')" id="nav-attempts">
+      <span>&#9744;</span> Login attempts <span class="badge" id="b-attempts">0</span>
+    </button>
+    <button onclick="showPage('files')" id="nav-files">
+      <span>&#9646;</span> Received files <span class="badge" id="b-files">0</span>
+    </button>
+    <button onclick="showPage('logs')" id="nav-logs">
+      <span>&#9632;</span> Server logs <span class="badge" id="b-logs">0</span>
+    </button>
+  </nav>
+
+  <main>
+
+    <!-- LOAD AREA (always visible at top) -->
+    <div class="upload-area" id="drop-area" onclick="document.getElementById('file-input').click()">
+      <div style="font-size:24px;margin-bottom:8px">&#8679;</div>
+      <div style="font-weight:500;margin-bottom:4px">Load vpn_data_export.json</div>
+      <div style="font-size:12px">Click to browse or drag &amp; drop the file here</div>
+      <input type="file" id="file-input" accept=".json" style="display:none">
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="active">
+      <div class="stats-grid" id="stat-grid">
+        <div class="stat-card"><div class="label">Users</div><div class="value" style="color:var(--accent)" id="s-users">—</div></div>
+        <div class="stat-card"><div class="label">Sessions</div><div class="value" style="color:var(--purple)" id="s-sessions">—</div></div>
+        <div class="stat-card"><div class="label">Connections</div><div class="value" style="color:var(--green)" id="s-history">—</div></div>
+        <div class="stat-card"><div class="label">Login attempts</div><div class="value" style="color:var(--warn)" id="s-attempts">—</div></div>
+        <div class="stat-card"><div class="label">Files received</div><div class="value" style="color:var(--accent)" id="s-files">—</div></div>
+        <div class="stat-card"><div class="label">Log lines</div><div class="value" style="color:var(--muted)" id="s-logs">—</div></div>
+      </div>
+
+      <div class="section-title">Recent connections</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>User</th><th>IP</th><th>Connected at</th><th>Disconnected</th><th>Data sent</th><th>Data recv</th>
+          </tr></thead>
+          <tbody id="dash-history"></tbody>
+        </table>
+      </div>
+
+      <div class="section-title" style="margin-top:24px">Recent login attempts</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>IP</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="dash-attempts"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="page-users">
+      <div class="section-title">All users</div>
+      <input class="search-bar" placeholder="Search users..." oninput="filterTable('tbl-users',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Created</th><th>Last login</th><th>Status</th></tr></thead>
+          <tbody id="tbl-users"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div id="page-sessions">
+      <div class="section-title">Session tokens</div>
+      <input class="search-bar" placeholder="Search sessions..." oninput="filterTable('tbl-sessions',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>IP address</th><th>Created</th><th>Expires</th><th>Active</th></tr></thead>
+          <tbody id="tbl-sessions"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="page-history">
+      <div class="section-title">Connection history</div>
+      <input class="search-bar" placeholder="Search connections..." oninput="filterTable('tbl-history',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>IP</th><th>Connected at</th><th>Disconnected</th><th>Sent</th><th>Received</th></tr></thead>
+          <tbody id="tbl-history"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LOGIN ATTEMPTS -->
+    <div id="page-attempts">
+      <div class="section-title">Login attempts</div>
+      <input class="search-bar" placeholder="Search attempts..." oninput="filterTable('tbl-attempts',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>IP</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="tbl-attempts"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FILES -->
+    <div id="page-files">
+      <div class="section-title">Received files</div>
+      <input class="search-bar" placeholder="Search files..." id="file-search" oninput="renderFiles(this.value)">
+      <div class="file-grid" id="file-grid"></div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="page-logs">
+      <div class="section-title">
+        Server logs
+        <select id="log-filter" onchange="renderLogs()" style="margin-left:auto;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px">
+          <option value="ALL">All levels</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING">WARNING</option>
+          <option value="ERROR">ERROR</option>
+          <option value="DEBUG">DEBUG</option>
+        </select>
+      </div>
+      <input class="search-bar" placeholder="Search logs..." id="log-search" oninput="renderLogs()">
+      <div class="table-wrap" id="log-container" style="max-height:600px;overflow-y:auto"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let DB = null;
+
+function fmtBytes(b) {
+  if (!b) return '0 B';
+  b = parseInt(b);
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function fileIcon(ext) {
+  const icons = {
+    '.pdf':'📄', '.jpg':'🖼️', '.jpeg':'🖼️', '.png':'🖼️',
+    '.mp4':'🎬', '.mp3':'🎵', '.zip':'📦', '.rar':'📦',
+    '.docx':'📝', '.doc':'📝', '.xlsx':'📊', '.xls':'📊',
+    '.txt':'📋', '.py':'🐍', '.js':'⚡', '.html':'🌐',
+  };
+  return icons[ext] || '📁';
+}
+
+function pill(text, cls) {
+  return `<span class="pill pill-${cls}">${text}</span>`;
+}
+
+function showPage(name) {
+  document.querySelectorAll('main > div[id^="page-"]').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+function filterTable(id, q) {
+  q = q.toLowerCase();
+  const tbody = document.getElementById(id);
+  Array.from(tbody.rows).forEach(r => {
+    r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('tbl-users');
+  tbody.innerHTML = DB.users.length ? '' : '<tr><td colspan="6" class="empty">No users found</td></tr>';
+  DB.users.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${u.id}</td>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.role === 'admin' ? pill('admin','purple') : pill('user','muted')}</td>
+      <td class="mono" style="color:var(--muted)">${u.created_at || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${u.last_login || 'Never'}</td>
+      <td>${u.is_active ? pill('active','green') : pill('banned','red')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderSessions() {
+  const tbody = document.getElementById('tbl-sessions');
+  tbody.innerHTML = DB.sessions.length ? '' : '<tr><td colspan="6" class="empty">No sessions found</td></tr>';
+  DB.sessions.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${s.id}</td>
+      <td><strong>${s.username}</strong></td>
+      <td class="mono">${s.ip_address || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${s.created_at || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${s.expires_at || '—'}</td>
+      <td>${s.is_active ? pill('active','green') : pill('expired','muted')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('tbl-history');
+  tbody.innerHTML = DB.connection_history.length ? '' : '<tr><td colspan="7" class="empty">No connections yet</td></tr>';
+  DB.connection_history.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${c.id}</td>
+      <td><strong>${c.username}</strong></td>
+      <td class="mono">${c.ip_address || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.connected_at || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.disconnected_at || pill('still connected','green')}</td>
+      <td style="color:var(--accent)">${fmtBytes(c.bytes_sent)}</td>
+      <td style="color:var(--green)">${fmtBytes(c.bytes_recv)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAttempts() {
+  const tbody = document.getElementById('tbl-attempts');
+  tbody.innerHTML = DB.login_attempts.length ? '' : '<tr><td colspan="5" class="empty">No login attempts yet</td></tr>';
+  DB.login_attempts.forEach(a => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${a.id}</td>
+      <td><strong>${a.username}</strong></td>
+      <td class="mono">${a.ip_address || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${a.attempted_at || '—'}</td>
+      <td>${a.success ? pill('success','green') : pill('failed','red')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderDashHistory() {
+  const tbody = document.getElementById('dash-history');
+  tbody.innerHTML = '';
+  DB.connection_history.slice(0,10).forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${c.username}</strong></td>
+      <td class="mono">${c.ip_address||'—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.connected_at||'—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.disconnected_at||pill('online','green')}</td>
+      <td style="color:var(--accent)">${fmtBytes(c.bytes_sent)}</td>
+      <td style="color:var(--green)">${fmtBytes(c.bytes_recv)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (!DB.connection_history.length) tbody.innerHTML = '<tr><td colspan="6" class="empty">No connections yet</td></tr>';
+}
+
+function renderDashAttempts() {
+  const tbody = document.getElementById('dash-attempts');
+  tbody.innerHTML = '';
+  DB.login_attempts.slice(0,10).forEach(a => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${a.username}</strong></td>
+      <td class="mono">${a.ip_address||'—'}</td>
+      <td class="mono" style="color:var(--muted)">${a.attempted_at||'—'}</td>
+      <td>${a.success ? pill('success','green') : pill('failed','red')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (!DB.login_attempts.length) tbody.innerHTML = '<tr><td colspan="4" class="empty">No attempts yet</td></tr>';
+}
+
+function renderFiles(q='') {
+  const grid = document.getElementById('file-grid');
+  grid.innerHTML = '';
+  const files = DB.received_files.filter(f =>
+    !q || f.filename.toLowerCase().includes(q.toLowerCase()) || f.sender.toLowerCase().includes(q.toLowerCase())
+  );
+  if (!files.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No files received yet</div>'; return; }
+  files.forEach(f => {
+    const card = document.createElement('div');
+    card.className = 'file-card';
+    card.innerHTML = `
+      <div class="file-icon">${fileIcon(f.ext)}</div>
+      <div class="file-name">${f.filename}</div>
+      <div class="file-meta">${fmtBytes(f.size)} &bull; ${f.modified}</div>
+      <div class="file-sender">${pill('from: ' + f.sender, 'blue')}</div>
+      <div class="file-meta" style="word-break:break-all;font-size:10px;color:var(--muted)">${f.path}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderLogs() {
+  const level = document.getElementById('log-filter').value;
+  const q     = document.getElementById('log-search').value.toLowerCase();
+  const container = document.getElementById('log-container');
+  container.innerHTML = '';
+  const lines = DB.logs.filter(l =>
+    (level === 'ALL' || l.level === level) &&
+    (!q || l.raw.toLowerCase().includes(q))
+  );
+  if (!lines.length) { container.innerHTML = '<div class="empty">No log lines match</div>'; return; }
+  lines.slice(-300).forEach(l => {
+    const d = document.createElement('div');
+    d.className = `log-line log-${l.level}`;
+    d.textContent = l.raw;
+    container.appendChild(d);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function loadData(data) {
+  DB = data;
+  document.getElementById('export-time').textContent = 'Exported: ' + (data.exported_at || '—');
+
+  document.getElementById('b-users').textContent     = data.users.length;
+  document.getElementById('b-sessions').textContent  = data.sessions.length;
+  document.getElementById('b-history').textContent   = data.connection_history.length;
+  document.getElementById('b-attempts').textContent  = data.login_attempts.length;
+  document.getElementById('b-files').textContent     = data.received_files.length;
+  document.getElementById('b-logs').textContent      = data.logs.length;
+
+  document.getElementById('s-users').textContent     = data.users.length;
+  document.getElementById('s-sessions').textContent  = data.sessions.length;
+  document.getElementById('s-history').textContent   = data.connection_history.length;
+  document.getElementById('s-attempts').textContent  = data.login_attempts.length;
+  document.getElementById('s-files').textContent     = data.received_files.length;
+  document.getElementById('s-logs').textContent      = data.logs.length;
+
+  renderUsers();
+  renderSessions();
+  renderHistory();
+  renderAttempts();
+  renderDashHistory();
+  renderDashAttempts();
+  renderFiles();
+  renderLogs();
+
+  document.getElementById('drop-area').innerHTML = '<div style="color:var(--green);font-weight:500">&#10003; Data loaded successfully — ' + data.exported_at + '</div>';
+  showPage('dashboard');
+}
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { try { loadData(JSON.parse(ev.target.result)); } catch(err) { alert('Invalid JSON: ' + err); } };
+  reader.readAsText(file);
+});
+
+const drop = document.getElementById('drop-area');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { try { loadData(JSON.parse(ev.target.result)); } catch(err) { alert('Invalid JSON: ' + err); } };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVPN — Database Viewer</title>
+<style>
+  :root {
+    --bg:      #0d1117;
+    --bg2:     #161b22;
+    --bg3:     #21262d;
+    --border:  #30363d;
+    --text:    #c9d1d9;
+    --muted:   #8b949e;
+    --accent:  #00d4ff;
+    --green:   #7ee787;
+    --warn:    #f97316;
+    --danger:  #ff4444;
+    --purple:  #a78bfa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 14px; }
+
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { font-size: 18px; font-weight: 600; color: var(--accent); }
+  header span { font-size: 12px; color: var(--muted); }
+  #export-time { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+  .layout { display: flex; height: calc(100vh - 57px); }
+
+  nav {
+    width: 200px; flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 12px 0;
+  }
+  nav button {
+    width: 100%; text-align: left;
+    padding: 10px 20px;
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; gap: 10px;
+    transition: background 0.15s, color 0.15s;
+  }
+  nav button:hover { background: var(--bg3); color: var(--text); }
+  nav button.active { background: var(--bg3); color: var(--accent); border-left: 2px solid var(--accent); }
+  nav .badge {
+    margin-left: auto;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1px 7px; font-size: 11px; color: var(--muted);
+  }
+  nav button.active .badge { color: var(--accent); border-color: var(--accent); }
+
+  main { flex: 1; overflow-y: auto; padding: 24px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+  }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+
+  .section-title {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .search-bar {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px;
+    color: var(--text); font-size: 13px;
+    width: 100%; margin-bottom: 14px; outline: none;
+  }
+  .search-bar:focus { border-color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { position: sticky; top: 0; z-index: 1; }
+  th {
+    background: var(--bg3); color: var(--muted);
+    text-align: left; padding: 10px 12px;
+    font-weight: 500; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  th:hover { color: var(--text); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: var(--bg2); }
+  tr:last-child td { border-bottom: none; }
+
+  .table-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+
+  .pill {
+    display: inline-block; border-radius: 20px;
+    padding: 2px 10px; font-size: 11px; font-weight: 500;
+  }
+  .pill-green  { background: #0d2818; color: var(--green); border: 1px solid #1a4a2a; }
+  .pill-red    { background: #2d1515; color: var(--danger); border: 1px solid #5a2020; }
+  .pill-blue   { background: #0d1f3a; color: var(--accent); border: 1px solid #1a3a5a; }
+  .pill-amber  { background: #2d1f08; color: var(--warn); border: 1px solid #5a3a10; }
+  .pill-purple { background: #1e1535; color: var(--purple); border: 1px solid #3a2560; }
+  .pill-muted  { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+
+  .log-line {
+    font-family: 'Consolas', monospace; font-size: 12px;
+    padding: 4px 12px; border-bottom: 1px solid #1a1f26;
+    line-height: 1.5;
+  }
+  .log-line:hover { background: var(--bg3); }
+  .log-INFO    { color: #58a6ff; }
+  .log-WARNING { color: var(--warn); }
+  .log-ERROR   { color: var(--danger); }
+  .log-DEBUG   { color: var(--muted); }
+
+  .file-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .file-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .file-icon { font-size: 32px; }
+  .file-name { font-size: 13px; font-weight: 500; word-break: break-all; }
+  .file-meta { font-size: 11px; color: var(--muted); }
+  .file-sender { font-size: 11px; }
+
+  .empty { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
+
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 10px;
+    padding: 32px; text-align: center; color: var(--muted);
+    margin-bottom: 24px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .upload-area:hover { border-color: var(--accent); color: var(--accent); }
+  .upload-area.drag  { border-color: var(--accent); color: var(--accent); background: #001a2a; }
+
+  #page-dashboard, #page-users, #page-sessions,
+  #page-history, #page-attempts, #page-files, #page-logs { display: none; }
+  #page-dashboard.active, #page-users.active, #page-sessions.active,
+  #page-history.active, #page-attempts.active, #page-files.active,
+  #page-logs.active { display: block; }
+
+  .mono { font-family: 'Consolas', monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ SecureVPN</h1>
+  <span>Database Viewer</span>
+  <div id="export-time">No data loaded — drop vpn_data_export.json below</div>
+</header>
+
+<div class="layout">
+  <nav>
+    <button class="active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <span>&#9632;</span> Dashboard <span class="badge" id="b-dashboard">—</span>
+    </button>
+    <button onclick="showPage('users')" id="nav-users">
+      <span>&#9670;</span> Users <span class="badge" id="b-users">0</span>
+    </button>
+    <button onclick="showPage('sessions')" id="nav-sessions">
+      <span>&#9675;</span> Sessions <span class="badge" id="b-sessions">0</span>
+    </button>
+    <button onclick="showPage('history')" id="nav-history">
+      <span>&#9671;</span> Connections <span class="badge" id="b-history">0</span>
+    </button>
+    <button onclick="showPage('attempts')" id="nav-attempts">
+      <span>&#9744;</span> Login attempts <span class="badge" id="b-attempts">0</span>
+    </button>
+    <button onclick="showPage('files')" id="nav-files">
+      <span>&#9646;</span> Received files <span class="badge" id="b-files">0</span>
+    </button>
+    <button onclick="showPage('logs')" id="nav-logs">
+      <span>&#9632;</span> Server logs <span class="badge" id="b-logs">0</span>
+    </button>
+  </nav>
+
+  <main>
+
+    <!-- LOAD AREA (always visible at top) -->
+    <div class="upload-area" id="drop-area" onclick="document.getElementById('file-input').click()">
+      <div style="font-size:24px;margin-bottom:8px">&#8679;</div>
+      <div style="font-weight:500;margin-bottom:4px">Load vpn_data_export.json</div>
+      <div style="font-size:12px">Click to browse or drag &amp; drop the file here</div>
+      <input type="file" id="file-input" accept=".json" style="display:none">
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="active">
+      <div class="stats-grid" id="stat-grid">
+        <div class="stat-card"><div class="label">Users</div><div class="value" style="color:var(--accent)" id="s-users">—</div></div>
+        <div class="stat-card"><div class="label">Sessions</div><div class="value" style="color:var(--purple)" id="s-sessions">—</div></div>
+        <div class="stat-card"><div class="label">Connections</div><div class="value" style="color:var(--green)" id="s-history">—</div></div>
+        <div class="stat-card"><div class="label">Login attempts</div><div class="value" style="color:var(--warn)" id="s-attempts">—</div></div>
+        <div class="stat-card"><div class="label">Files received</div><div class="value" style="color:var(--accent)" id="s-files">—</div></div>
+        <div class="stat-card"><div class="label">Log lines</div><div class="value" style="color:var(--muted)" id="s-logs">—</div></div>
+      </div>
+
+      <div class="section-title">Recent connections</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>User</th><th>IP</th><th>Connected at</th><th>Disconnected</th><th>Data sent</th><th>Data recv</th>
+          </tr></thead>
+          <tbody id="dash-history"></tbody>
+        </table>
+      </div>
+
+      <div class="section-title" style="margin-top:24px">Recent login attempts</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>IP</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="dash-attempts"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="page-users">
+      <div class="section-title">All users</div>
+      <input class="search-bar" placeholder="Search users..." oninput="filterTable('tbl-users',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Created</th><th>Last login</th><th>Status</th></tr></thead>
+          <tbody id="tbl-users"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div id="page-sessions">
+      <div class="section-title">Session tokens</div>
+      <input class="search-bar" placeholder="Search sessions..." oninput="filterTable('tbl-sessions',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>IP address</th><th>Created</th><th>Expires</th><th>Active</th></tr></thead>
+          <tbody id="tbl-sessions"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="page-history">
+      <div class="section-title">Connection history</div>
+      <input class="search-bar" placeholder="Search connections..." oninput="filterTable('tbl-history',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>IP</th><th>Connected at</th><th>Disconnected</th><th>Sent</th><th>Received</th></tr></thead>
+          <tbody id="tbl-history"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LOGIN ATTEMPTS -->
+    <div id="page-attempts">
+      <div class="section-title">Login attempts</div>
+      <input class="search-bar" placeholder="Search attempts..." oninput="filterTable('tbl-attempts',this.value)">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>IP</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="tbl-attempts"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FILES -->
+    <div id="page-files">
+      <div class="section-title">Received files</div>
+      <input class="search-bar" placeholder="Search files..." id="file-search" oninput="renderFiles(this.value)">
+      <div class="file-grid" id="file-grid"></div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="page-logs">
+      <div class="section-title">
+        Server logs
+        <select id="log-filter" onchange="renderLogs()" style="margin-left:auto;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px">
+          <option value="ALL">All levels</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING">WARNING</option>
+          <option value="ERROR">ERROR</option>
+          <option value="DEBUG">DEBUG</option>
+        </select>
+      </div>
+      <input class="search-bar" placeholder="Search logs..." id="log-search" oninput="renderLogs()">
+      <div class="table-wrap" id="log-container" style="max-height:600px;overflow-y:auto"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let DB = null;
+
+function fmtBytes(b) {
+  if (!b) return '0 B';
+  b = parseInt(b);
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function fileIcon(ext) {
+  const icons = {
+    '.pdf':'📄', '.jpg':'🖼️', '.jpeg':'🖼️', '.png':'🖼️',
+    '.mp4':'🎬', '.mp3':'🎵', '.zip':'📦', '.rar':'📦',
+    '.docx':'📝', '.doc':'📝', '.xlsx':'📊', '.xls':'📊',
+    '.txt':'📋', '.py':'🐍', '.js':'⚡', '.html':'🌐',
+  };
+  return icons[ext] || '📁';
+}
+
+function pill(text, cls) {
+  return `<span class="pill pill-${cls}">${text}</span>`;
+}
+
+function showPage(name) {
+  document.querySelectorAll('main > div[id^="page-"]').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+function filterTable(id, q) {
+  q = q.toLowerCase();
+  const tbody = document.getElementById(id);
+  Array.from(tbody.rows).forEach(r => {
+    r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('tbl-users');
+  tbody.innerHTML = DB.users.length ? '' : '<tr><td colspan="6" class="empty">No users found</td></tr>';
+  DB.users.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${u.id}</td>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.role === 'admin' ? pill('admin','purple') : pill('user','muted')}</td>
+      <td class="mono" style="color:var(--muted)">${u.created_at || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${u.last_login || 'Never'}</td>
+      <td>${u.is_active ? pill('active','green') : pill('banned','red')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderSessions() {
+  const tbody = document.getElementById('tbl-sessions');
+  tbody.innerHTML = DB.sessions.length ? '' : '<tr><td colspan="6" class="empty">No sessions found</td></tr>';
+  DB.sessions.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${s.id}</td>
+      <td><strong>${s.username}</strong></td>
+      <td class="mono">${s.ip_address || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${s.created_at || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${s.expires_at || '—'}</td>
+      <td>${s.is_active ? pill('active','green') : pill('expired','muted')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('tbl-history');
+  tbody.innerHTML = DB.connection_history.length ? '' : '<tr><td colspan="7" class="empty">No connections yet</td></tr>';
+  DB.connection_history.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${c.id}</td>
+      <td><strong>${c.username}</strong></td>
+      <td class="mono">${c.ip_address || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.connected_at || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.disconnected_at || pill('still connected','green')}</td>
+      <td style="color:var(--accent)">${fmtBytes(c.bytes_sent)}</td>
+      <td style="color:var(--green)">${fmtBytes(c.bytes_recv)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAttempts() {
+  const tbody = document.getElementById('tbl-attempts');
+  tbody.innerHTML = DB.login_attempts.length ? '' : '<tr><td colspan="5" class="empty">No login attempts yet</td></tr>';
+  DB.login_attempts.forEach(a => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${a.id}</td>
+      <td><strong>${a.username}</strong></td>
+      <td class="mono">${a.ip_address || '—'}</td>
+      <td class="mono" style="color:var(--muted)">${a.attempted_at || '—'}</td>
+      <td>${a.success ? pill('success','green') : pill('failed','red')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderDashHistory() {
+  const tbody = document.getElementById('dash-history');
+  tbody.innerHTML = '';
+  DB.connection_history.slice(0,10).forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${c.username}</strong></td>
+      <td class="mono">${c.ip_address||'—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.connected_at||'—'}</td>
+      <td class="mono" style="color:var(--muted)">${c.disconnected_at||pill('online','green')}</td>
+      <td style="color:var(--accent)">${fmtBytes(c.bytes_sent)}</td>
+      <td style="color:var(--green)">${fmtBytes(c.bytes_recv)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (!DB.connection_history.length) tbody.innerHTML = '<tr><td colspan="6" class="empty">No connections yet</td></tr>';
+}
+
+function renderDashAttempts() {
+  const tbody = document.getElementById('dash-attempts');
+  tbody.innerHTML = '';
+  DB.login_attempts.slice(0,10).forEach(a => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${a.username}</strong></td>
+      <td class="mono">${a.ip_address||'—'}</td>
+      <td class="mono" style="color:var(--muted)">${a.attempted_at||'—'}</td>
+      <td>${a.success ? pill('success','green') : pill('failed','red')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (!DB.login_attempts.length) tbody.innerHTML = '<tr><td colspan="4" class="empty">No attempts yet</td></tr>';
+}
+
+function renderFiles(q='') {
+  const grid = document.getElementById('file-grid');
+  grid.innerHTML = '';
+  const files = DB.received_files.filter(f =>
+    !q || f.filename.toLowerCase().includes(q.toLowerCase()) || f.sender.toLowerCase().includes(q.toLowerCase())
+  );
+  if (!files.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No files received yet</div>'; return; }
+  files.forEach(f => {
+    const card = document.createElement('div');
+    card.className = 'file-card';
+    card.innerHTML = `
+      <div class="file-icon">${fileIcon(f.ext)}</div>
+      <div class="file-name">${f.filename}</div>
+      <div class="file-meta">${fmtBytes(f.size)} &bull; ${f.modified}</div>
+      <div class="file-sender">${pill('from: ' + f.sender, 'blue')}</div>
+      <div class="file-meta" style="word-break:break-all;font-size:10px;color:var(--muted)">${f.path}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderLogs() {
+  const level = document.getElementById('log-filter').value;
+  const q     = document.getElementById('log-search').value.toLowerCase();
+  const container = document.getElementById('log-container');
+  container.innerHTML = '';
+  const lines = DB.logs.filter(l =>
+    (level === 'ALL' || l.level === level) &&
+    (!q || l.raw.toLowerCase().includes(q))
+  );
+  if (!lines.length) { container.innerHTML = '<div class="empty">No log lines match</div>'; return; }
+  lines.slice(-300).forEach(l => {
+    const d = document.createElement('div');
+    d.className = `log-line log-${l.level}`;
+    d.textContent = l.raw;
+    container.appendChild(d);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function loadData(data) {
+  DB = data;
+  document.getElementById('export-time').textContent = 'Exported: ' + (data.exported_at || '—');
+
+  document.getElementById('b-users').textContent     = data.users.length;
+  document.getElementById('b-sessions').textContent  = data.sessions.length;
+  document.getElementById('b-history').textContent   = data.connection_history.length;
+  document.getElementById('b-attempts').textContent  = data.login_attempts.length;
+  document.getElementById('b-files').textContent     = data.received_files.length;
+  document.getElementById('b-logs').textContent      = data.logs.length;
+
+  document.getElementById('s-users').textContent     = data.users.length;
+  document.getElementById('s-sessions').textContent  = data.sessions.length;
+  document.getElementById('s-history').textContent   = data.connection_history.length;
+  document.getElementById('s-attempts').textContent  = data.login_attempts.length;
+  document.getElementById('s-files').textContent     = data.received_files.length;
+  document.getElementById('s-logs').textContent      = data.logs.length;
+
+  renderUsers();
+  renderSessions();
+  renderHistory();
+  renderAttempts();
+  renderDashHistory();
+  renderDashAttempts();
+  renderFiles();
+  renderLogs();
+
+  document.getElementById('drop-area').innerHTML = '<div style="color:var(--green);font-weight:500">&#10003; Data loaded successfully — ' + data.exported_at + '</div>';
+  showPage('dashboard');
+}
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { try { loadData(JSON.parse(ev.target.result)); } catch(err) { alert('Invalid JSON: ' + err); } };
+  reader.readAsText(file);
+});
+
+const drop = document.getElementById('drop-area');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { try { loadData(JSON.parse(ev.target.result)); } catch(err) { alert('Invalid JSON: ' + err); } };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>
